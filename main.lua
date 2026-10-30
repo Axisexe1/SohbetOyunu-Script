@@ -2,7 +2,7 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 
 local Window = WindUI:CreateWindow({
     Title = "Sohbet Oyunu | Script",
-    Author = "By Axis",
+    Author = "By Axis.",
     Folder = "SohbetOyunu",
     Size = UDim2.fromOffset(580, 460),
     ToggleKey = Enum.KeyCode.Insert
@@ -215,6 +215,7 @@ local function startFly()
     if not hrp or not humanoid then return end
 
     humanoid.PlatformStand = true
+    humanoid.AutoRotate = false
 
     bodyGyro = Instance.new("BodyGyro")
     bodyGyro.P = 9e4
@@ -250,7 +251,10 @@ local function stopFly()
 
     local char = game.Players.LocalPlayer.Character
     local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-    if humanoid then humanoid.PlatformStand = false end
+        if humanoid then 
+        humanoid.PlatformStand = false 
+        humanoid.AutoRotate = true 
+    end
 end
 
 FlySection:Toggle({
@@ -330,6 +334,55 @@ TPSection:Button({
     Icon = "refresh-cw",
     Callback = function()
         playerDropdown:SetValues(getPlayerNames())
+    end
+})
+
+local atpeEnabled = false
+local atpeConnection = nil
+local lastPos = nil
+local atpeCooldown = false
+
+TPSection:Toggle({
+    Title = "ATPE",
+    Desc = "Biri Sizi Yanına Çekiyorsa Eski Yerinize Işınlanırsınız.",
+    Type = "Checkbox",
+    Value = false,
+    Callback = function(state)
+        atpeEnabled = state
+        if state then
+            atpeConnection = game:GetService("RunService").Heartbeat:Connect(function()
+                if not atpeEnabled or atpeCooldown then return end
+                local char = game.Players.LocalPlayer.Character
+                local hrp = char and char:FindFirstChild("HumanoidRootPart")
+                if not hrp then return end
+                
+                if lastPos == nil then
+                    lastPos = hrp.Position
+                else
+                    local dist = (hrp.Position - lastPos).Magnitude
+                    
+                    if dist > 30 then
+                        atpeCooldown = true
+                        hrp.CFrame = CFrame.new(lastPos)
+                        task.wait(0.5)
+                        lastPos = hrp.Position
+                        atpeCooldown = false
+                    else
+                        if dist > 1 and not (char:FindFirstChildOfClass("Humanoid") and char:FindFirstChildOfClass("Humanoid").MoveDirection.Magnitude > 0.1) then
+                            lastPos = hrp.Position
+                        elseif dist < 1 then
+                            lastPos = hrp.Position
+                        end
+                    end
+                end
+            end)
+        else
+            if atpeConnection then
+                atpeConnection:Disconnect()
+                atpeConnection = nil
+            end
+            lastPos = nil
+        end
     end
 })
 
@@ -588,12 +641,17 @@ local BoostSection = BoostTab:Section({
 })
 
 local autoFarmEnabled = false
-local autoFarmSpeed = 50
+local autoFarmSpeed = 20
+local tpX = 245
+local tpY = 72
+local tpZ = 297
 local autoFarmConnection
 local autoFarmNoclipConn
 local autoFarmSitConn
 local targetFolder = nil
 local moneyList = {}
+local charAddedConn
+local autoFarmNoclipActive = false
 
 local function findFolder()
     for _, obj in ipairs(workspace:GetDescendants()) do
@@ -682,78 +740,70 @@ end
 local function startAutoFarm()
     targetFolder = findFolder()
     if not targetFolder then
-        WindUI:Notify({ Title = "Hata", Content = "Para klasörü bulunamadı", Icon = "x" })
+        WindUI:Notify({ Title = "Error", Content = "Script Fix Yemiştir. Düzelmesini Bekleyin.", Icon = "x" })
         return
     end
     
     collectMoney()
     if #moneyList == 0 then
-        WindUI:Notify({ Title = "Hata", Content = "Para bulunamadı", Icon = "x" })
+        WindUI:Notify({ Title = "Error", Content = "Script Fix Yemiştir. Düzelmesini Bekleyin.", Icon = "x" })
         return
     end
     
     startNoclip()
+    autoFarmNoclipActive = true
     startSitBlock()
+        if charAddedConn then charAddedConn:Disconnect() end
+    charAddedConn = game.Players.LocalPlayer.CharacterAdded:Connect(function(newChar)
+        if not autoFarmEnabled then return end
+        task.wait(0.5)
+        local newHrp = newChar:WaitForChild("HumanoidRootPart", 5)
+        if newHrp then
+        newHrp.CFrame = CFrame.new(tpX, tpY, tpZ)
+        end
+    end)
     
     autoFarmConnection = game:GetService("RunService").Heartbeat:Connect(function()
         if not autoFarmEnabled then return end
         
         local char = game.Players.LocalPlayer.Character
         local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
         if not hrp then return end
-        
+
         local nearest, dist = getNearestMoney(hrp)
-                if not nearest then
-            autoFarmEnabled = false
-            if autoFarmConnection then autoFarmConnection:Disconnect() end
-            
-            local ground = nil
-            local minY = math.huge
-            for _, part in ipairs(workspace:GetDescendants()) do
-                if part:IsA("BasePart") and part.Anchored and part.CanCollide then
-                    if part.Position.Y < hrp.Position.Y and part.Position.Y < minY then
-                        local distXZ = (Vector3.new(part.Position.X, hrp.Position.Y, part.Position.Z) - hrp.Position).Magnitude
-                        if distXZ < 50 then
-                            minY = part.Position.Y
-                            ground = part
-                        end
-                    end
-                end
-            end
-            
-            if ground then
-                task.spawn(function()
-                    local target = ground.Position + Vector3.new(0, 5, 0)
-                    while autoFarmEnabled == false do
-                        local char2 = game.Players.LocalPlayer.Character
-                        local hrp2 = char2 and char2:FindFirstChild("HumanoidRootPart")
-                        if not hrp2 then break end
-                        local d = (target - hrp2.Position).Magnitude
-                        if d < 2 then break end
-                        local dir = (target - hrp2.Position).Unit
-                        hrp2.CFrame = hrp2.CFrame + dir * autoFarmSpeed * 0.016
-                        task.wait()
-                    end
-                    stopNoclip()
-                    stopSitBlock()
-                end)
-            else
+        
+        if not nearest then
+            if autoFarmNoclipActive then
                 stopNoclip()
-                stopSitBlock()
+                autoFarmNoclipActive = false
+                if humanoid then humanoid.PlatformStand = false end
+                workspace.Gravity = 196.2
+                hrp.CFrame = CFrame.new(tpX, tpY, tpZ)
             end
-            
-            WindUI:Notify({ Title = "Başarıyla Gerçekleşti!", Content = "Tüm Paralar Toplandı", Icon = "check" })
+            task.wait(1)
             return
         end
         
-        if dist < 3 then
+        if not autoFarmNoclipActive then
+            startNoclip()
+            autoFarmNoclipActive = true
+        end
+        
+        
+        if dist < 1.5 then
             hrp.CFrame = CFrame.new(nearest.Position)
             table.remove(moneyList, table.find(moneyList, nearest))
             return
         end
         
+        if humanoid and not humanoid.PlatformStand then
+            humanoid.PlatformStand = true
+        end
+        workspace.Gravity = 0
+        
         local dir = (nearest.Position - hrp.Position).Unit
-        hrp.CFrame = hrp.CFrame + dir * autoFarmSpeed * 0.016
+        hrp.CFrame = hrp.CFrame + dir * (autoFarmSpeed * 0.016)
     end)
 end
 
@@ -767,12 +817,26 @@ BoostSection:Toggle({
         if state then
             startAutoFarm()
         else
+            autoFarmNoclipActive = false        
+            if charAddedConn then
+                charAddedConn:Disconnect()
+                charAddedConn = nil
+            end
             if autoFarmConnection then
                 autoFarmConnection:Disconnect()
                 autoFarmConnection = nil
             end
             stopNoclip()
             stopSitBlock()
+            
+            local char = game.Players.LocalPlayer.Character
+            local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.MaxHealth = 100
+                humanoid.Health = 100
+                humanoid.PlatformStand = false
+            end
+            workspace.Gravity = 196.2
         end
     end
 })
@@ -788,7 +852,7 @@ BoostSection:Slider({
 })
 
 local Boost2Section = BoostTab:Section({ 
-    Title = "Parkour Teleport", 
+    Title = "AutoFarm2", 
     Opened = true 
 })
 
@@ -805,7 +869,7 @@ Boost2Section:Button({
         
         local folder = findFolder()
         if not folder then
-            WindUI:Notify({ Title = "Hata", Content = "Klasör bulunamadı", Icon = "x" })
+            WindUI:Notify({ Title = "Error", Content = "Script Fix Yemiştir. Düzelmesini Bekleyin.", Icon = "x" })
             parkourTeleporting = false
             return
         end
@@ -818,7 +882,7 @@ Boost2Section:Button({
         end
         
         if #parkourList == 0 then
-            WindUI:Notify({ Title = "Hata", Content = "ParkourMoney bulunamadı", Icon = "x" })
+            WindUI:Notify({ Title = "Error", Content = "Script Fix Yemiştir. Düzelmesini Bekleyin.", Icon = "x" })
             parkourTeleporting = false
             return
         end
@@ -841,6 +905,12 @@ Boost2Section:Button({
                 hrp.CFrame = CFrame.new(targetPos + Vector3.new(0, 5, 0))
                 task.wait(parkourSpeed)
             end
+            local finalChar = game.Players.LocalPlayer.Character
+            local finalHrp = finalChar and finalChar:FindFirstChild("HumanoidRootPart")
+            if finalHrp then
+                finalHrp.CFrame = CFrame.new(tpX, tpY, tpZ)
+            end
+
             parkourTeleporting = false
             WindUI:Notify({ Title = "Başarıyla Gerçekleşti!", Content = "Parkur Ödülleri Alındı", Icon = "check" })
         end)
@@ -987,7 +1057,7 @@ SettingsSection:Button({
         end)
         
         if not success or not response then
-            WindUI:Notify({ Title = "Hata", Content = "Sunucu listesi alınamadı", Icon = "x" })
+            WindUI:Notify({ Title = "Error", Content = "Sunucu Listesi Alınamadı", Icon = "x" })
             return
         end
         
@@ -1001,7 +1071,7 @@ SettingsSection:Button({
         end
         
         if #servers == 0 then
-            WindUI:Notify({ Title = "Hata", Content = "Uygun sunucu bulunamadı", Icon = "x" })
+            WindUI:Notify({ Title = "Error", Content = "Uygun Sunucu Bulunamadı", Icon = "x" })
             return
         end
         
@@ -1014,6 +1084,6 @@ SettingsSection:Button({
 })
 
 SettingsSection:Button({
-    Title = "v1.0",
+    Title = "v1.2",
     Callback = function() end
 })
