@@ -2,7 +2,7 @@ local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/rel
 
 local Window = WindUI:CreateWindow({
     Title = "Sohbet Oyunu | Script",
-    Author = "Hatalar Olabilir.",
+    Author = "By Axis",
     Folder = "SohbetOyunu",
     Size = UDim2.fromOffset(580, 460),
     ToggleKey = Enum.KeyCode.Insert
