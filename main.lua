@@ -790,9 +790,8 @@ local function startAutoFarm()
             if checkNearest then
                 startNoclip()
                 autoFarmNoclipActive = true
-            else
-                return
             end
+            return
         end
         
         if not autoFarmNoclipActive then
