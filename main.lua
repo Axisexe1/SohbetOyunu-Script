@@ -783,7 +783,15 @@ local function startAutoFarm()
                     autoFarmNoclipActive = false
                     if humanoid then humanoid.PlatformStand = false end
                     workspace.Gravity = 196.2
-                    hrp.CFrame = CFrame.new(tpX, tpY, tpZ)
+                    task.delay(2, function()
+                        if waitingForMoney and autoFarmEnabled then
+                            local c = game.Players.LocalPlayer.Character
+                            local h = c and c:FindFirstChild("HumanoidRootPart")
+                            if h then
+                                h.CFrame = CFrame.new(tpX, tpY, tpZ)
+                            end
+                        end
+                    end)
                 end
             end
             
@@ -810,8 +818,7 @@ local function startAutoFarm()
         end
         
         
-        if dist < 1 then
-            hrp.CFrame = CFrame.new(nearest.Position)
+        if dist < 2 then
             table.remove(moneyList, table.find(moneyList, nearest))
             return
         end
