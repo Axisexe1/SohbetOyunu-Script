@@ -864,7 +864,7 @@ BoostSection:Slider({
     Title = "Farm Speed",
     Desc = "Yüksek hız önerilmez",
     Step = 1,
-    Value = { Min = 10, Max = 40, Default = 20 },
+    Value = { Min = 10, Max = 30, Default = 20 },
     Callback = function(value)
         autoFarmSpeed = value
     end
