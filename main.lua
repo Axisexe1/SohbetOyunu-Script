@@ -652,6 +652,8 @@ local targetFolder = nil
 local moneyList = {}
 local charAddedConn
 local autoFarmNoclipActive = false
+local waitingForMoney = false
+local lastCheckTime = 0
 
 local function findFolder()
     for _, obj in ipairs(workspace:GetDescendants()) do
@@ -773,25 +775,33 @@ local function startAutoFarm()
 
         local nearest, dist = getNearestMoney(hrp)
 
-        if not nearest then
-            if autoFarmNoclipActive then
-                stopNoclip()
-                autoFarmNoclipActive = false
-                if humanoid then humanoid.PlatformStand = false end
-                workspace.Gravity = 196.2
-                hrp.CFrame = CFrame.new(tpX, tpY, tpZ)
+                if not nearest then
+            if not waitingForMoney then
+                waitingForMoney = true
+                if autoFarmNoclipActive then
+                    stopNoclip()
+                    autoFarmNoclipActive = false
+                    if humanoid then humanoid.PlatformStand = false end
+                    workspace.Gravity = 196.2
+                    hrp.CFrame = CFrame.new(tpX, tpY, tpZ)
+                end
             end
             
-            task.wait(1)
-            
-            collectMoney()
-            
-            local checkNearest = getNearestMoney(hrp)
-            if checkNearest then
-                startNoclip()
-                autoFarmNoclipActive = true
+            if os.clock() - lastCheckTime > 1 then
+                lastCheckTime = os.clock()
+                collectMoney()
+                local checkNearest = getNearestMoney(hrp)
+                if checkNearest then
+                    waitingForMoney = false
+                    startNoclip()
+                    autoFarmNoclipActive = true
+                end
             end
             return
+        end
+        
+        if waitingForMoney then
+            waitingForMoney = false
         end
         
         if not autoFarmNoclipActive then
