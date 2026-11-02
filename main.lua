@@ -772,7 +772,7 @@ local function startAutoFarm()
         if not hrp then return end
 
         local nearest, dist = getNearestMoney(hrp)
-        
+
         if not nearest then
             if autoFarmNoclipActive then
                 stopNoclip()
@@ -781,8 +781,18 @@ local function startAutoFarm()
                 workspace.Gravity = 196.2
                 hrp.CFrame = CFrame.new(tpX, tpY, tpZ)
             end
+            
             task.wait(1)
-            return
+            
+            collectMoney()
+            
+            local checkNearest = getNearestMoney(hrp)
+            if checkNearest then
+                startNoclip()
+                autoFarmNoclipActive = true
+            else
+                return
+            end
         end
         
         if not autoFarmNoclipActive then
