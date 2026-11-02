@@ -1,8 +1,8 @@
 local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
 
 local Window = WindUI:CreateWindow({
-    Title = "Sohbet Oyunu | Script",
-    Author = "By Axis.",
+    Title = "Sohbet Oyunu | By Axis.",
+    Author = "Hatalar Olabilir.",
     Folder = "SohbetOyunu",
     Size = UDim2.fromOffset(580, 460),
     ToggleKey = Enum.KeyCode.Insert
@@ -864,7 +864,7 @@ BoostSection:Slider({
     Title = "Farm Speed",
     Desc = "Yüksek hız önerilmez",
     Step = 1,
-    Value = { Min = 10, Max = 70, Default = 20 },
+    Value = { Min = 10, Max = 40, Default = 20 },
     Callback = function(value)
         autoFarmSpeed = value
     end
