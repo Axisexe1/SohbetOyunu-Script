@@ -810,7 +810,7 @@ local function startAutoFarm()
         end
         
         
-        if dist < 0.5 then
+        if dist < 1 then
             hrp.CFrame = CFrame.new(nearest.Position)
             table.remove(moneyList, table.find(moneyList, nearest))
             return
