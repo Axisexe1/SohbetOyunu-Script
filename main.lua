@@ -333,7 +333,19 @@ TPSection:Button({
     Desc = "",
     Icon = "refresh-cw",
     Callback = function()
-        playerDropdown:SetValues(getPlayerNames())
+        if playerDropdown then
+            playerDropdown:Destroy()
+        end
+
+        playerDropdown = TPSection:Dropdown({
+            Title = "Select Player",
+            Desc = "",
+            Values = getPlayerNames(),
+            Value = nil,
+            Callback = function(option)
+                selectedPlayer = option
+            end
+        })
     end
 })
 
