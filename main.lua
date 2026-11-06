@@ -1122,6 +1122,6 @@ SettingsSection:Button({
 })
 
 SettingsSection:Button({
-    Title = "v1.2",
+    Title = "v1.3",
     Callback = function() end
 })
